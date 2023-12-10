@@ -1,6 +1,8 @@
 # History files
 .Rhistory
 .Rapp.history
+/MixedModel_Presentation
+*.Rproj
 
 # Session Data files
 .RData
