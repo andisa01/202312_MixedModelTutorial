@@ -6,9 +6,6 @@
 # Follow along at: https://github.com/andisa01/202312_MixedModelTutorial
 # Read the associated blog post at azandisresearch.com/...
 
-load.image("./MixedModel_Presentation/Slide1.JPG") %>% plot(axes = FALSE)
-
-
 ## Load libraries ====
 library(tidyverse) # For data wrangling
 
@@ -18,6 +15,8 @@ library(imager) # I use this to display images during live demo.
 source("https://raw.githubusercontent.com/andisa01/andis_utils/main/00_HelperFunctions.R") # Andis's helper functions and display settings
 options(ggplot2.discrete.colour = c(RColorBrewer::brewer.pal(8, "Dark2"), RColorBrewer::brewer.pal(8, "Set1"))) # Set the default colors for ggplot
 ####
+
+load.image("./MixedModel_Presentation/Slide1.JPG") %>% plot(axes = FALSE)
 
 
 # Intro =====
@@ -109,14 +108,19 @@ dat_f <-
   )
 
 
+###
+# What were some of your topics?
+###
+
 ## Visualize the simulated dataset ====
-load.image("./MixedModel_Presentation/Slide1.JPG") %>% plot(axes = FALSE)
+load.image("./MixedModel_Presentation/Slide2.JPG") %>% plot(axes = FALSE)
 
 
-# In this example, we have 12 species of dragons 
+# In this example, we have 12 species of dragons and we will look at the number of peaseants that that those dragons consume.
 # First, lets take at the relationship between dragon length and the number of attributed peasants consumed by each dragon
 
 ## No pooling model ====
+# A common way to model this relationship is to include species as a fixed effect interacting with pessants.
 dat_f %>%
   ggplot(aes(x = peasants, y = dragon_length, col = species)) +
   geom_point(size = 4, pch = 16, alpha = 0.5) +
@@ -166,11 +170,19 @@ dat_f %>%
   coord_cartesian(xlim = c(0, 40), ylim = c(0, 130)) +
   facet_wrap(vars(species)) +
   theme(legend.position = "right")
-# The complete pooling line is pretty good. We get a much more reasonable lookign estimate for species L and we can make predictions for species K now. But we are consistently biasing estimates high for species A and E while consistently biasing low for sepecies D.
+# The complete pooling line is pretty good. We get a much more reasonable looking estimate for species L and we can make predictions for species K now. But we are consistently biasing estimates high for species A and E while consistently biasing low for species D.
 
 # Could we do even better by strategically sharing information about all observations together while still using the known species groups to inform the estimates? Yes, the answer is partial pooling.
 
 ## Partial pooling model ====
+
+load.image("./MixedModel_Presentation/Slide5.JPG") %>% plot(axes = FALSE)
+
+load.image("./MixedModel_Presentation/Slide6.JPG") %>% plot(axes = FALSE)
+
+load.image("./MixedModel_Presentation/Slide7.JPG") %>% plot(axes = FALSE)
+
+load.image("./MixedModel_Presentation/Slide8.JPG") %>% plot(axes = FALSE)
 
 # We'll use the lme4 package to fit our mixed models (nlme is another popular package).
 library(lme4)
@@ -269,8 +281,9 @@ dat_f %>%
 dat_f %>%
   ggplot(aes(x = peasants, y = dragon_length)) +
   geom_point(aes(col = species), size = 4, pch = 16, alpha = 0.5) +
+  geom_smooth(aes(group = species), method = 'lm', se = FALSE, fullrange = TRUE, size = 3, col = "white") +
   geom_smooth(aes(col = species), method = 'lm', se = FALSE, fullrange = TRUE, size = 2) +
-  geom_smooth(data = dat_predictions, aes(y = lm_y_hat), method = 'lm', col = "firebrick", size = 2) +
+  geom_smooth(data = dat_predictions, aes(y = lm_y_hat), method = 'lm', col = "firebrick", size = 1) +
   geom_smooth(data = dat_predictions, aes(y = lmer_y_hat_rirs_cond), method = 'lm', col = "green3", size = 2, lty = 2) +
   coord_cartesian(xlim = c(0, 40), ylim = c(0, 130)) +
   facet_wrap(vars(species)) +
@@ -344,17 +357,17 @@ dat_f %>%
 # We can use heirarchical mixed models to simultaneously partially pool information about the species AND the region. But, to do so, we have to use background knowledge or intuition to determine the structre of our random effects. Or, in other words, we need to determine how region and species interact.
 
 # If we think that the growth of dragons is mostly constrained by their species and environmental effects modulate that intrinsic rate in the same way across all species, we could visualize that effects structure like this:
-load.image("./MixedModel_Presentation/Slide5.JPG") %>% plot(axes = FALSE)
+load.image("./MixedModel_Presentation/Slide9.JPG") %>% plot(axes = FALSE)
 # This is called a crossed effect design. We would be allowing both species and region to have it's own intercept and slope parameter.
 lmer(dragon_length ~ peasants + (peasants|region) + (peasants|species), data = dat_f) %>% summary()
 
 # If we though that every species has its own intrinsic rate of growth, but each reacts different to the environmental effect of the region, we might want to use a nested random effect structre that looks like this:
-load.image("./MixedModel_Presentation/Slide6.JPG") %>% plot(axes = FALSE)
+load.image("./MixedModel_Presentation/Slide10.JPG") %>% plot(axes = FALSE)
 # In this case, we would be allowing each species to have its own intercept and slope and each region within a species to have its own variance from the overall species.
 lmer(dragon_length ~ peasants + (peasants|species/region), data = dat_f) %>% summary()
 
 # We may think that every species reacts completely differently in every region with no overall tren between species or regions. In that case, we would give each species/region combination its own intercept and slop varince from the fixed effect.
-load.image("./MixedModel_Presentation/Slide7.JPG") %>% plot(axes = FALSE)
+load.image("./MixedModel_Presentation/Slide11.JPG") %>% plot(axes = FALSE)
 lmer(dragon_length ~ peasants + (peasants|species:region), data = dat_f) %>% summary()
 
 # As before, we could also allow different levels of the hierarchy to vary in slope or intercept or both or neither. 
@@ -371,10 +384,11 @@ lmer(dragon_length ~ peasants + (1|region) + (peasants|species), data = dat_f) %
 # There are also semi-parametric methods that bootstrap the residuals.
 
 # My preference is to use fully nonparametric methods to bootstrap all parameters. If you are insterested in this method, I have a tutorial on my blog: https://www.azandisresearch.com/2022/12/31/visualize-mixed-effect-regressions-in-r-with-ggplot2/
-load.image("./MixedModel_Presentation/Slide8.JPG") %>% plot(axes = FALSE)
+load.image("./MixedModel_Presentation/Slide12.JPG") %>% plot(axes = FALSE)
 
 
 # Resources: ====
 # For those inclined to the Bayesian persuation, TJ Mahr has an excellent section of his partial pooling tutorial showing an implementation in RStanARM. https://www.tjmahr.com/plotting-partial-pooling-in-mixed-effects-models/
 # Full disclosure, Mahr's blog was a big inspiration for this blog and presentation.
-load.image("./MixedModel_Presentation/Slide9.JPG") %>% plot(axes = FALSE)
+load.image("./MixedModel_Presentation/Slide13.JPG") %>% plot(axes = FALSE)
+
